@@ -1,121 +1,134 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState } from 'react'
+import {
+  Alert,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Container,
+  Spinner,
+  Table,
+} from 'reactstrap'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+function Health() {
+  const [estado, setEstado] = useState({ cargando: true, ok: false, mensaje: '' })
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
+      .then((data) => setEstado({ cargando: false, ok: true, mensaje: data.message }))
+      .catch(() =>
+        setEstado({
+          cargando: false,
+          ok: false,
+          mensaje: 'No se pudo conectar con el API.',
+        }),
+      )
+  }, [])
+
+  const clase = estado.cargando ? '' : estado.ok ? 'ok' : 'error'
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <section className="health-section">
+      <div className={`health-box ${clase}`}>
+        <h4>Estado del API</h4>
+        <p>
+          {estado.cargando
+            ? 'Verificando...'
+            : estado.ok
+              ? `El API está funcionando: ${estado.mensaje}`
+              : `${estado.mensaje}`}
+        </p>
+      </div>
+    </section>
+  )
+}
 
-      <div className="ticks"></div>
+function Info() {
+  const [info, setInfo] = useState(null)
+  const [error, setError] = useState(false)
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+  useEffect(() => {
+    fetch('/api/info')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
+      .then(setInfo)
+      .catch(() => setError(true))
+  }, [])
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+  return (
+    <section className="info-section">
+      <Card className="shadow-sm">
+        <CardHeader className="bg-primary text-white">
+          <CardTitle tag="h5" className="mb-0">
+            Información de los integrantes
+          </CardTitle>
+        </CardHeader>
+        <CardBody>
+          {error && (
+            <Alert color="danger" className="mb-0">
+              No se pudo obtener la información del API.
+            </Alert>
+          )}
+          {!error && !info && (
+            <div className="text-center">
+              <Spinner color="primary" />
+            </div>
+          )}
+          {info && (
+            <>
+              <Alert color="success">
+                {info.message} — Integrantes:{' '}
+                <Badge color="success">{info.total_integrantes}</Badge>
+              </Alert>
+              <Table responsive striped bordered hover className="mb-0">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Carnet</th>
+                    <th>Ciudad de origen</th>
+                    <th>Carrera</th>
+                    <th>Proyectos realizados</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {info.integrantes.map((i) => (
+                    <tr key={i.carnet}>
+                      <td>{i.nombre}</td>
+                      <td>{i.carnet}</td>
+                      <td>{i.ciudad_de_origen}</td>
+                      <td>{i.carrera}</td>
+                      <td>
+                        <Badge color="primary" pill>
+                          {i.cantidad_proyectos}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </>
+          )}
+        </CardBody>
+      </Card>
+    </section>
+  )
+}
+
+function App() {
+  return (
+    <Container>
+      <h1 className="titulo">Taller IV</h1>
+      <Health />
+      <Info />
+    </Container>
   )
 }
 
